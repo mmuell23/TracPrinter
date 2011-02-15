@@ -1,6 +1,5 @@
 import javax.swing.JFrame;
 
-
 public class PrinterLauncher {
 
 	/**
@@ -10,5 +9,4 @@ public class PrinterLauncher {
 		JFrame frame = new PrinterGui();
 		frame.setSize(400, 120);
 	}
-
 }

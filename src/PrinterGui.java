@@ -144,7 +144,7 @@ public class PrinterGui extends JFrame implements Printable {
 		c.gridwidth = 3;
 		panel.add(new JLabel("TracPrinter: www.any-where.de"), c);
 
-		this.setTitle("TRAC Ticlet Printer");
+		this.setTitle("TracPrinter");
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		ticketField.transferFocus();
 		
@@ -240,11 +240,16 @@ public class PrinterGui extends JFrame implements Printable {
 			int font_size_header = Integer.parseInt(prop.getProperty("font_size_header"));
 			int font_size_description = Integer.parseInt(prop.getProperty("font_size_description"));
 			
+			int max_chars_headline = Integer.parseInt(prop.getProperty("max_chars_headline"));
 			int padding_text_left = Integer.parseInt(prop.getProperty("padding_text_left"));
 			int distance_header_top = Integer.parseInt(prop.getProperty("distance_header_top"));
 			
 			graphics.drawRect(1, 1, width, height);
 			graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_header));
+			if(field_header.length() > max_chars_headline) {
+			    field_header = field_header.substring(0, max_chars_headline - 3) + " ...";
+			}
+			
 			graphics.drawString(field_header, padding_text_left, distance_header_top);
 
 			Font font = new Font(Font.SANS_SERIF, Font.PLAIN, font_size_description);
@@ -257,6 +262,7 @@ public class PrinterGui extends JFrame implements Printable {
 			int chars_per_line = Integer.parseInt(prop.getProperty("chars_per_line"));
 			int line_height = Integer.parseInt(prop.getProperty("line_height"));
 			int max_lines = Integer.parseInt(prop.getProperty("max_lines"));
+			
 			int distance_description_top = Integer.parseInt(prop.getProperty("distance_description_top"));
 			int line_counter = 0;
 			
