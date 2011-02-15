@@ -4,7 +4,7 @@ import javax.swing.JFrame;
 public class PrinterLauncher {
 
 	/**
-	 * @param args
+	 * Run this...
 	 */
 	public static void main(String[] args) {
 		JFrame frame = new PrinterGui();

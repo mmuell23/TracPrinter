@@ -33,27 +33,23 @@ import javax.swing.JTextField;
 import javax.swing.UIManager;
 
 public class PrinterGui extends JFrame implements Printable {
-	JTextField ticketField;
-	JButton submitButton;
-	Properties prop = new Properties();
+    private JTextField ticketField; 
+    private JButton submitButton;
+    private JComboBox combo;
 	
-	String id;
-	String summary;
-	String date;
-	String reporter;
-	String owner;
-	String sprint;
-	String description;
-	String remaining_time;
-	Map<String, String> data;
+    private Properties prop = new Properties(); //container for properties
 	
-	String field_header;
-	String field_description;
-	String field_footer;
-	JComboBox combo;
+    private Map<String, String> data;
+	
+    private String field_header;
+    private String field_description;
+    private String field_footer;
 	
 	boolean loadingDone = false;
 	
+	/**
+	 * Set up Swing GUI
+	 */
 	public PrinterGui() {
 		loadProperties();
 		try {
@@ -156,7 +152,9 @@ public class PrinterGui extends JFrame implements Printable {
 		setVisible(true);
 	}
 	
-	
+	/**
+	 * Load properties
+	 */
 	private void loadProperties() {
 		try {
 			prop.load(new FileInputStream("printer.properties"));
@@ -167,6 +165,9 @@ public class PrinterGui extends JFrame implements Printable {
 		}
 	}
 	
+	/**
+	 * Try to load ticket info by URL and start printing routine
+	 */
 	public void getTicketContents() {
 		data = new HashMap<String, String>();
 		try {
@@ -210,7 +211,10 @@ public class PrinterGui extends JFrame implements Printable {
 		}
 	}
 
-	public void printTicket() {
+	/**
+	 * Show print dialog
+	 */
+	private void printTicket() {
 		PrinterJob printJob = PrinterJob.getPrinterJob();
 		printJob.setPrintable(this);
 		
