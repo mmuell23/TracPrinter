@@ -7,7 +7,7 @@ To configure it, go ahead and do this:
     * edit printer.properties
     * Add your Trac-URL (eg.trac_url = http://localhost:800)
     * Add a comma-separated list of projects (trac_project = project1,project2,project3)
-    * run program and type in ticket id and hit print. There you go ...
+    * run program (PrinterGui) and type in ticket id and hit print. There you go ...
 
 Configure printed ticket parts:
 
