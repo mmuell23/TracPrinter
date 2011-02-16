@@ -69,6 +69,8 @@ public class PrinterGui extends JFrame implements Printable {
 	private int width;
 	private int height;
 	
+	private String PROPERTIES_URL_FOR_APPLET="http://localhost/testarea/TracPrinter/printer.properties";
+	
 	/**
 	 * Set up Swing GUI
 	 */
@@ -91,7 +93,7 @@ public class PrinterGui extends JFrame implements Printable {
 	}
 	
 	public PrinterGui(Container panel) {
-		loadProperties();
+		loadPropertiesFromUrl();
 		arrangeElements(panel);
 	}
 	
@@ -190,8 +192,7 @@ public class PrinterGui extends JFrame implements Printable {
 	 */
 	private void loadProperties() {
 		try {
-			URL properties = getClass().getResource("printer.properties");
-			prop.load(properties.openStream());
+			prop.load(new FileInputStream(new File("printer.properties")));
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
 		} catch (IOException e1) {
@@ -199,6 +200,16 @@ public class PrinterGui extends JFrame implements Printable {
 		}
 	}
 	
+	private void loadPropertiesFromUrl() {
+		try {
+			URL properties = new URL(PROPERTIES_URL_FOR_APPLET);
+			prop.load(properties.openStream());
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}		
+	}
 	/**
 	 * Try to load ticket info by URL and start printing routine
 	 */
