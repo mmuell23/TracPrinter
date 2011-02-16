@@ -81,6 +81,21 @@ public class PrinterGui extends JFrame implements Printable {
 		}
 		
 		Container panel = getContentPane();
+		arrangeElements(panel);
+
+		this.setTitle("TracPrinter");
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		pack();
+		setVisible(true);
+	}
+	
+	public PrinterGui(Container panel) {
+		loadProperties();
+		arrangeElements(panel);
+	}
+	
+	private void arrangeElements(Container panel) {
 		LayoutManager lm = new GridBagLayout();
 		GridBagConstraints c = new GridBagConstraints();
 		panel.setLayout(lm);
@@ -166,20 +181,17 @@ public class PrinterGui extends JFrame implements Printable {
 		c.gridwidth = 3;
 		panel.add(new JLabel("TracPrinter: www.any-where.de"), c);
 
-		this.setTitle("TracPrinter");
-		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		ticketField.transferFocus();
-		
-		pack();
-		setVisible(true);
+		ticketField.transferFocus();		
 	}
+	
 	
 	/**
 	 * Load properties
 	 */
 	private void loadProperties() {
 		try {
-			prop.load(new FileInputStream("printer.properties"));
+			URL properties = getClass().getResource("printer.properties");
+			prop.load(properties.openStream());
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
 		} catch (IOException e1) {
@@ -224,9 +236,13 @@ public class PrinterGui extends JFrame implements Printable {
 			}
 			loadingDone = true;
 		} catch (MalformedURLException e) {
+			ticketField.setText(e.getMessage());
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
+			ticketField.setText(e.getMessage());
+		} catch  (Exception e) {
+			ticketField.setText(e.getMessage());
 		}
 		if(loadingDone) {
 			printTicket();			
