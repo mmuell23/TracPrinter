@@ -3,4 +3,5 @@ bin/**/*.class
 .settings/**/*
 .project
 .classpath
-
+*.jpg
+*.ps

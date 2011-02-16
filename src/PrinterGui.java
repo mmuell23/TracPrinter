@@ -6,25 +6,42 @@ import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.LayoutManager;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
+import javax.print.DocFlavor;
+import javax.print.StreamPrintServiceFactory;
+import javax.print.attribute.HashPrintRequestAttributeSet;
+import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.standard.Copies;
+import javax.print.attribute.standard.MediaSize;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -45,7 +62,12 @@ public class PrinterGui extends JFrame implements Printable {
     private String field_description;
     private String field_footer;
 	
-	boolean loadingDone = false;
+	private boolean loadingDone = false;
+	
+	private BufferedImage ticketCard;
+	
+	private int width;
+	private int height;
 	
 	/**
 	 * Set up Swing GUI
@@ -217,6 +239,43 @@ public class PrinterGui extends JFrame implements Printable {
 	private void printTicket() {
 		PrinterJob printJob = PrinterJob.getPrinterJob();
 		printJob.setPrintable(this);
+		String suffix = "jpg";
+		
+		DocFlavor flavor = DocFlavor.INPUT_STREAM.JPEG;
+		String psMimeType = DocFlavor.BYTE_ARRAY.POSTSCRIPT.getMimeType();
+		StreamPrintServiceFactory[] psfactories = StreamPrintServiceFactory.lookupStreamPrintServiceFactories(flavor, psMimeType);
+		
+		//Store card as file
+        width = Integer.parseInt(prop.getProperty("ticket_width"));
+        height = Integer.parseInt(prop.getProperty("ticket_height"));		
+		boolean keepFile = Boolean.parseBoolean(prop.getProperty("keep_image_as_file"));
+        ticketCard = new BufferedImage(width + 100, height + 100, BufferedImage.TYPE_INT_RGB);
+		Graphics g = getGraphics(ticketCard.createGraphics());
+		
+		try {
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersBySuffix("jpeg");
+            if (!writers.hasNext())
+                throw new IllegalStateException("No writers found");
+            
+            ImageWriter writer = (ImageWriter) writers.next();
+            File file = new File(ticketField.getText() + "." + suffix);
+            ImageOutputStream ios = ImageIO.createImageOutputStream(new FileOutputStream(file));
+            
+            writer.setOutput(ios);
+            
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionQuality(1.0f);
+            
+            writer.write(null, new IIOImage(ticketCard, null, null), param);
+            
+            if(!keepFile) {
+                file.delete();
+            }
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
 		
 		if(printJob.printDialog()) {
 			try {
@@ -227,73 +286,88 @@ public class PrinterGui extends JFrame implements Printable {
 		}
 	}
 
+	public Graphics2D getGraphics(Graphics2D graphics) {
+	    int offset = 10;
+	    
+	    graphics.setColor(Color.WHITE);
+	    graphics.fillRect(0, 0, 10000,10000);
+	    graphics.setColor(Color.BLACK);
+	    graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+	    
+        int font_size_header = Integer.parseInt(prop.getProperty("font_size_header"));
+        int font_size_description = Integer.parseInt(prop.getProperty("font_size_description"));
+        
+        int max_chars_headline = Integer.parseInt(prop.getProperty("max_chars_headline"));
+        int padding_text_left = Integer.parseInt(prop.getProperty("padding_text_left")) + offset;
+        int distance_header_top = Integer.parseInt(prop.getProperty("distance_header_top")) + offset;
+        int distance_footer_top = Integer.parseInt(prop.getProperty("distance_footer_top")) + offset;
+        int distance_description_top = Integer.parseInt(prop.getProperty("distance_description_top")) + offset;
+        
+        int distance_line_top = Integer.parseInt(prop.getProperty("distance_line_top")) + offset;
+        int distance_line_bottom = Integer.parseInt(prop.getProperty("distance_line_bottom")) + offset;
+        
+        graphics.drawRect(offset, offset, width, height);
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_header));
+        if(field_header.length() > max_chars_headline) {
+            field_header = field_header.substring(0, max_chars_headline - 3) + " ...";
+        }
+        
+        graphics.drawString(field_header, padding_text_left, distance_header_top);
+        Font font = new Font(Font.SANS_SERIF, Font.PLAIN, font_size_description);
+        graphics.setFont(font);
+        
+        String[] words = field_description.split(" ");
+        String line = "";
+        
+        int pos = 0;
+        int chars_per_line = Integer.parseInt(prop.getProperty("chars_per_line"));
+        int line_height = Integer.parseInt(prop.getProperty("line_height"));
+        int max_lines = Integer.parseInt(prop.getProperty("max_lines"));
+        
+        int line_counter = 0;
+        
+        //build lines
+        for (String word : words) {
+            if(line_counter == 0 && word.startsWith("\"")) {
+                word = word.substring(1);
+            }
+            if(word.endsWith("\"")) {
+                word = word.substring(0, word.length()-1);
+            }
+            if(line_counter < max_lines) {
+                line = line + word + " ";
+                pos = pos + word.length();
+                if(pos > chars_per_line) {
+                    graphics.drawString(line, padding_text_left, distance_description_top + line_counter * line_height);
+                    pos = 0;
+                    line_counter++;
+                    line = "";
+                }
+            }
+        }
+        
+        graphics.drawString(line + "...", padding_text_left, distance_description_top + line_counter * line_height);
+        
+        graphics.drawString(field_footer, padding_text_left, distance_footer_top);
+        graphics.drawString(prop.getProperty("trac_url") + prop.getProperty("trac_project") + "/ticket/" + ticketField.getText(), padding_text_left, distance_footer_top + line_height);
+        
+        graphics.drawLine(offset, distance_line_top, width + offset, distance_line_top);
+        graphics.drawLine(offset, distance_line_bottom, width + offset, distance_line_bottom);	    
+	    return null;
+	}
+	
 	@Override
 	public int print(Graphics graphics, PageFormat pageFormat, int pageIndex)
 			throws PrinterException {
+	    
+	    double scale = 0.45;
+	    int w = (int) (scale * ticketCard.getWidth());
+	    int h = (int) (scale * ticketCard.getHeight());	    
+	    
 		if(pageIndex == 0) {
 			Graphics2D g = (Graphics2D) graphics;
-			g.setColor(Color.black);
 			g.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-			
-			int width = Integer.parseInt(prop.getProperty("ticket_width"));
-			int height = Integer.parseInt(prop.getProperty("ticket_height"));
-			int font_size_header = Integer.parseInt(prop.getProperty("font_size_header"));
-			int font_size_description = Integer.parseInt(prop.getProperty("font_size_description"));
-			
-			int max_chars_headline = Integer.parseInt(prop.getProperty("max_chars_headline"));
-			int padding_text_left = Integer.parseInt(prop.getProperty("padding_text_left"));
-			int distance_header_top = Integer.parseInt(prop.getProperty("distance_header_top"));
-			
-			graphics.drawRect(1, 1, width, height);
-			graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_header));
-			if(field_header.length() > max_chars_headline) {
-			    field_header = field_header.substring(0, max_chars_headline - 3) + " ...";
-			}
-			
-			graphics.drawString(field_header, padding_text_left, distance_header_top);
-
-			Font font = new Font(Font.SANS_SERIF, Font.PLAIN, font_size_description);
-			graphics.setFont(font);
-			
-			String[] words = field_description.split(" ");
-			String line = "";
-			
-			int pos = 0;
-			int chars_per_line = Integer.parseInt(prop.getProperty("chars_per_line"));
-			int line_height = Integer.parseInt(prop.getProperty("line_height"));
-			int max_lines = Integer.parseInt(prop.getProperty("max_lines"));
-			
-			int distance_description_top = Integer.parseInt(prop.getProperty("distance_description_top"));
-			int line_counter = 0;
-			
-			//build lines
-			for (String word : words) {
-				if(line_counter == 0 && word.startsWith("\"")) {
-					word = word.substring(1);
-				}
-				if(word.endsWith("\"")) {
-					word = word.substring(0, word.length()-1);
-				}
-				if(line_counter < max_lines) {
-					line = line + word + " ";
-					pos = pos + word.length();
-					if(pos > chars_per_line) {
-						graphics.drawString(line, padding_text_left, distance_description_top + line_counter * line_height);
-						pos = 0;
-						line_counter++;
-						line = "";
-					}
-				}
-			}
-			
-			graphics.drawString(line + "...", padding_text_left, distance_description_top + line_counter * line_height);
-			
-			graphics.drawString(field_footer, padding_text_left, height - 50 + 20);
-			graphics.drawString(prop.getProperty("trac_url") + prop.getProperty("trac_project") + "/ticket/" + ticketField.getText(), padding_text_left, height - 50 + 20 + line_height);
-			
-			graphics.drawLine(1, 50, width, 50);
-			graphics.drawLine(1, height-50, width, height-50);
-			
+			graphics.drawImage(ticketCard, 0, 50, w, h, null);
 			return PAGE_EXISTS;
 		} else {
 			return NO_SUCH_PAGE;
