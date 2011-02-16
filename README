@@ -1,0 +1,27 @@
+Hi there!
+
+Thanks for being interested in TracPrinter. This is really an early version of the program. The intention was to have a simple way to print tickets for a Scrum / Kanban board from a Trac installation.
+To configure it, go ahead and do this:
+
+    * Compile java code
+    * edit printer.properties
+    * Add your Trac-URL (eg.trac_url = http://localhost:800)
+    * Add a comma-separated list of projects (trac_project = project1,project2,project3)
+    * run program and type in ticket id and hit print. There you go ...
+
+Configure printed ticket parts:
+
+    * edit printer.properties
+    * edit fields: field_header, field_description, field_footer
+
+You may use any fieldname used in your track installation. To easily find out which fields exist in your personal installation and configuration, export a ticket as CSV and see the headline.
+
+Default setting is
+
+    field_header = {id}: {summary}
+
+    field_description = {description}
+
+    field_footer = Reporter: {reporter} - Owner: {owner}
+
+
