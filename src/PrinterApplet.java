@@ -11,9 +11,7 @@ public class PrinterApplet extends JApplet {
 				@Override
 				public void run() {
 					JPanel p = new JPanel();
-					PrinterGui gui = new PrinterGui(p);
-					//p.add(new JLabel("test"));
-					//add(new JLabel("test"));
+					PrinterGui gui = new PrinterGui(p, getParameter("properties"));
 					getContentPane().add(p);
 				}
 			});

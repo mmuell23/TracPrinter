@@ -69,8 +69,6 @@ public class PrinterGui extends JFrame implements Printable {
 	private int width;
 	private int height;
 	
-	private String PROPERTIES_URL_FOR_APPLET="http://localhost/testarea/TracPrinter/printer.properties";
-	
 	/**
 	 * Set up Swing GUI
 	 */
@@ -92,8 +90,8 @@ public class PrinterGui extends JFrame implements Printable {
 		setVisible(true);
 	}
 	
-	public PrinterGui(Container panel) {
-		loadPropertiesFromUrl();
+	public PrinterGui(Container panel, String propertiesUrl) {
+		loadPropertiesFromUrl(propertiesUrl);
 		arrangeElements(panel);
 	}
 	
@@ -200,9 +198,9 @@ public class PrinterGui extends JFrame implements Printable {
 		}
 	}
 	
-	private void loadPropertiesFromUrl() {
+	private void loadPropertiesFromUrl(String propertiesUrl) {
 		try {
-			URL properties = new URL(PROPERTIES_URL_FOR_APPLET);
+			URL properties = new URL(propertiesUrl);
 			prop.load(properties.openStream());
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
@@ -270,7 +268,6 @@ public class PrinterGui extends JFrame implements Printable {
 		
 		DocFlavor flavor = DocFlavor.INPUT_STREAM.JPEG;
 		String psMimeType = DocFlavor.BYTE_ARRAY.POSTSCRIPT.getMimeType();
-		StreamPrintServiceFactory[] psfactories = StreamPrintServiceFactory.lookupStreamPrintServiceFactories(flavor, psMimeType);
 		
 		//Store card as file
         width = Integer.parseInt(prop.getProperty("ticket_width"));
