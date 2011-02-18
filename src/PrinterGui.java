@@ -408,7 +408,7 @@ public class PrinterGui extends JFrame implements Printable {
         line_counter = 0;
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_footer));
         graphics.drawString(field_footer, padding_text_left, distance_footer_top);
-        graphics.drawString(prop.getProperty("trac_url") + prop.getProperty("trac_project") + "/ticket/" + ticketField.getText(), padding_text_left, distance_footer_top + line_height_footer);
+        graphics.drawString(prop.getProperty("trac_url") + combo.getSelectedItem() + "/ticket/" + ticketField.getText(), padding_text_left, distance_footer_top + line_height_footer);
         
         graphics.drawLine(offset, distance_line_top, width + offset, distance_line_top);
         graphics.drawLine(offset, distance_line_bottom, width + offset, distance_line_bottom);	    
