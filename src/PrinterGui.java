@@ -1,7 +1,6 @@
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -12,8 +11,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
+import java.awt.print.Book;
 import java.awt.print.PageFormat;
-import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.BufferedReader;
@@ -33,13 +32,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Stack;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
-import javax.print.DocFlavor;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -47,7 +46,7 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 
-public class PrinterGui extends JFrame implements Printable {
+public class PrinterGui extends JFrame {
     private JTextField ticketField; 
     private JButton submitButton;
     private JComboBox combo;
@@ -56,9 +55,7 @@ public class PrinterGui extends JFrame implements Printable {
 	
     private Map<String, String> data;
 	
-	private boolean loadingDone = false;
-	
-	private List<BufferedImage> images;
+	private Stack<BufferedImage> images;
 	private List<Map<String, String>> toPrint;
 	
 	private int width;
@@ -103,7 +100,7 @@ public class PrinterGui extends JFrame implements Printable {
 	
 	private void init() {
 	    toPrint = new ArrayList<Map<String,String>>();
-	    images = new ArrayList<BufferedImage>();
+	    images = new Stack<BufferedImage>();
 	}
 	
 	private void arrangeElements(Container panel) {
@@ -202,8 +199,39 @@ public class PrinterGui extends JFrame implements Printable {
 	        getTicketContents(ticketId.trim());
         }
 	    createTicketImage();
+	    
+	    BufferedImage image1 = null;
+	    BufferedImage image2 = null;
+	    
+	    if(!images.isEmpty()) {
+	    	image1 = images.pop();
+	    }
+	    if(!images.isEmpty()) {
+	    	image2 = images.pop();
+	    }
+	    
+	    Book book = new Book();
+	    PageFormat documentPageFormat = new PageFormat();
+	    documentPageFormat.setOrientation(PageFormat.PORTRAIT);
+	    
+	    while(image1 != null || image2 != null) {
+	    	TicketCard tc = new TicketCard(image1, image2);
+	    	if(!images.isEmpty()) {
+	    		image1 = images.pop();
+	    	} else {
+	    		image1 = null;
+	    	}
+		    if(!images.isEmpty()) {
+		    	image2 = images.pop();
+		    } else {
+		    	image2 = null;
+		    }
+		    
+		    book.append(tc, documentPageFormat);
+	    }
+	    
         PrinterJob printJob = PrinterJob.getPrinterJob();
-        printJob.setPrintable(this);
+        printJob.setPageable(book);
 
         if(printJob.printDialog()) {
             try {
@@ -287,7 +315,6 @@ public class PrinterGui extends JFrame implements Printable {
 				field_description = field_description.replaceAll("\\{" + key + "\\}", data.get(key));
 				field_footer = field_footer.replaceAll("\\{" + key + "\\}", data.get(key));
 			}
-			loadingDone = true;
 			
 			Map<String, String> d = new HashMap<String, String>();
 			d.put("field_header", field_header);
@@ -341,7 +368,7 @@ public class PrinterGui extends JFrame implements Printable {
                 if(!keepFile) {
                     file.delete();
                 }
-                images.add(ticketCard);
+                images.push(ticketCard);
             } catch (IOException e1) {
                 e1.printStackTrace();
             }  
@@ -427,32 +454,5 @@ public class PrinterGui extends JFrame implements Printable {
         
         graphics.drawLine(offset, distance_line_top, width + offset, distance_line_top);
         graphics.drawLine(offset, distance_line_bottom, width + offset, distance_line_bottom);	    
-	}
-	
-	@Override
-	public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
-	    if(pageIndex == 0) {
-	        Graphics2D g = (Graphics2D) graphics;
-	        g.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-	        
-	        int ticketCounter = 0;
-	        int offset = 0;
-	        double scale = 0.45;
-	        
-    	    for (BufferedImage ticketCard : images) {
-    	        offset = (int)(ticketCounter * ticketCard.getHeight() * scale);
-    	        
-    	        int w = (int) (scale * ticketCard.getWidth());
-    	        int h = (int) (scale * ticketCard.getHeight()); 
-                
-                graphics.drawImage(ticketCard, 0, 50 + offset, w, h, null);   
-                ticketCounter++;
-                System.out.println(ticketCounter);
-            }
-
-			return PAGE_EXISTS;
-		} else {
-			return NO_SUCH_PAGE;
-		}
-	}
+	}	
 }
