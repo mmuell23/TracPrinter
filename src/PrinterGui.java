@@ -24,7 +24,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.Authenticator;
 import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -69,6 +71,15 @@ public class PrinterGui extends JFrame implements Printable {
 	
 	private int width;
 	private int height;
+	
+	private static String user;
+	private static String pass;
+	
+    static class TracAuthenticator extends Authenticator {
+        public PasswordAuthentication getPasswordAuthentication() {
+            return (new PasswordAuthentication(user, pass.toCharArray()));
+        }
+    }	
 	
 	/**
 	 * Set up Swing GUI
@@ -192,6 +203,7 @@ public class PrinterGui extends JFrame implements Printable {
 	private void loadProperties() {
 		try {
 			prop.load(new FileInputStream(new File("printer.properties")));
+			setUserAndPass();
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
 		} catch (IOException e1) {
@@ -203,18 +215,32 @@ public class PrinterGui extends JFrame implements Printable {
 		try {
 			URL properties = new URL(propertiesUrl);
 			prop.load(properties.openStream());
+			setUserAndPass();
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}		
 	}
+	
+	private void setUserAndPass() {
+	    if(!prop.getProperty("trac_user").equals("")) {
+	        user = prop.getProperty("trac_user");
+	        pass = prop.getProperty("trac_pass");
+	    }
+	}
+	
 	/**
 	 * Try to load ticket info by URL and start printing routine
 	 */
 	public void getTicketContents() {
 		data = new HashMap<String, String>();
 		try {
+		    
+		    if(!user.equals("") && !pass.equals("")) {
+		        Authenticator.setDefault(new TracAuthenticator());
+		    }
+		    
 			URL url = new URL(prop.getProperty("trac_url") + combo.getSelectedItem() + "/ticket/" + ticketField.getText() + "?format=tab");
 			BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
 			String header = in.readLine();
@@ -246,13 +272,14 @@ public class PrinterGui extends JFrame implements Printable {
 			}
 			loadingDone = true;
 		} catch (MalformedURLException e) {
-			ticketField.setText(e.getMessage());
+			//ticketField.setText(e.getMessage());
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-			ticketField.setText(e.getMessage());
+			//ticketField.setText(e.getMessage());
 		} catch  (Exception e) {
-			ticketField.setText(e.getMessage());
+		    e.printStackTrace();
+			//ticketField.setText(e.getMessage());
 		}
 		if(loadingDone) {
 			printTicket();			
