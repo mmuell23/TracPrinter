@@ -38,6 +38,7 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 import javax.print.DocFlavor;
 import javax.print.StreamPrintServiceFactory;
+import javax.print.DocFlavor.CHAR_ARRAY;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.Copies;
@@ -230,7 +231,7 @@ public class PrinterGui extends JFrame implements Printable {
 			
 			for(int i=0; i<keys.length; i++) {
 				if(i < values.length) {
-					data.put(keys[i], values[i]);
+				    data.put(keys[i], values[i]);
 				}
 			}
 			
@@ -319,6 +320,7 @@ public class PrinterGui extends JFrame implements Printable {
 	    graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 	    
         int font_size_header = Integer.parseInt(prop.getProperty("font_size_header"));
+        int font_size_footer = Integer.parseInt(prop.getProperty("font_size_footer"));
         int font_size_description = Integer.parseInt(prop.getProperty("font_size_description"));
         
         int max_chars_headline = Integer.parseInt(prop.getProperty("max_chars_headline"));
@@ -333,7 +335,7 @@ public class PrinterGui extends JFrame implements Printable {
         graphics.drawRect(offset, offset, width, height);
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_header));
         if(field_header.length() > max_chars_headline) {
-            field_header = field_header.substring(0, max_chars_headline - 3) + " ...";
+            field_header = field_header.substring(0, max_chars_headline - 3);
         }
         
         graphics.drawString(field_header, padding_text_left, distance_header_top);
@@ -345,7 +347,10 @@ public class PrinterGui extends JFrame implements Printable {
         
         int pos = 0;
         int chars_per_line = Integer.parseInt(prop.getProperty("chars_per_line"));
-        int line_height = Integer.parseInt(prop.getProperty("line_height"));
+        
+        int line_height_description = Integer.parseInt(prop.getProperty("line_height_description"));
+        int line_height_footer = Integer.parseInt(prop.getProperty("line_height_footer"));
+        
         int max_lines = Integer.parseInt(prop.getProperty("max_lines"));
         
         int line_counter = 0;
@@ -359,21 +364,24 @@ public class PrinterGui extends JFrame implements Printable {
                 word = word.substring(0, word.length()-1);
             }
             if(line_counter < max_lines) {
-                line = line + word + " ";
-                pos = pos + word.length();
-                if(pos > chars_per_line) {
-                    graphics.drawString(line, padding_text_left, distance_description_top + line_counter * line_height);
-                    pos = 0;
+                if(pos + word.length() > chars_per_line) {
+                    graphics.drawString(line, padding_text_left, distance_description_top + line_counter * line_height_description);
                     line_counter++;
-                    line = "";
+                    line = word + " ";
+                    pos = line.length();
+                } else {
+                    line = line + word + " ";
+                    pos = pos + word.length();
                 }
             }
         }
         
-        graphics.drawString(line + "...", padding_text_left, distance_description_top + line_counter * line_height);
+        graphics.drawString(line, padding_text_left, distance_description_top + line_counter * line_height_description);
         
+        line_counter = 0;
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_footer));
         graphics.drawString(field_footer, padding_text_left, distance_footer_top);
-        graphics.drawString(prop.getProperty("trac_url") + prop.getProperty("trac_project") + "/ticket/" + ticketField.getText(), padding_text_left, distance_footer_top + line_height);
+        graphics.drawString(prop.getProperty("trac_url") + prop.getProperty("trac_project") + "/ticket/" + ticketField.getText(), padding_text_left, distance_footer_top + line_height_footer);
         
         graphics.drawLine(offset, distance_line_top, width + offset, distance_line_top);
         graphics.drawLine(offset, distance_line_bottom, width + offset, distance_line_bottom);	    
