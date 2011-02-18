@@ -1,27 +1,57 @@
 Hi there!
 
-Thanks for being interested in TracPrinter. This is really an early version of the program. The intention was to have a simple way to print tickets for a Scrum / Kanban board from a Trac installation.
-To configure it, go ahead and do this:
+Thanks for being interested in TracPrinter.
+This is really an early version of the program. The intention was to have a simple way to print tickets for a Scrum / Kanban board from a Trac installation.
 
-    * Compile java code
-    * edit printer.properties
-    * Add your Trac-URL (eg.trac_url = http://localhost:800)
-    * Add a comma-separated list of projects (trac_project = project1,project2,project3)
-    * run program (PrinterGui) and type in ticket id and hit print. There you go ...
+## To configure it, go ahead and do this:
 
-Configure printed ticket parts:
+- Compile java code
+- edit printer.properties
+- Add your Trac-URL (eg.trac_url = http://localhost:800)
+- Add a comma-separated list of projects (trac_project = project1,project2,project3)
+- run program **PrinterGui** and type in ticket id and hit print. There you go ...
 
-    * edit printer.properties
-    * edit fields: field_header, field_description, field_footer
+## Configure printed ticket parts:
+
+- edit printer.properties
+- edit fields: field_header, field_description, field_footer
 
 You may use any fieldname used in your track installation. To easily find out which fields exist in your personal installation and configuration, export a ticket as CSV and see the headline.
 
 Default setting is
+> field_header = {id}: {summary}
 
-    field_header = {id}: {summary}
+> field_description = {description}
 
-    field_description = {description}
+> field_footer = Reporter: {reporter} - Owner: {owner}
 
-    field_footer = Reporter: {reporter} - Owner: {owner}
+## Run Trac Printer as Applet in Browser
+If you want to include the printer as an applet, you will need to create a signed jar file:
 
+- create / edit java.policy.applet file in bin folder beside class files
+
+```java
+grant {
+  permission java.security.AllPermission;
+  permission java.net.SocketPermission;
+};
+```
+
+- create a car file: jar cvf TracPrinter.jar *
+- create a key alias: 
+1. keytool -genkey -alias TracPrinter
+2. keytool -selfcert -alias TracPrinter
+- sign jar file: jarsigner TracPrinter.jar TracPrinter
+- create html file - copy from below and adjust path to properties file
+
+```html
+<html>
+	<head><title>TracPrinter Applet</title></head>
+	<body>
+		<applet code="PrinterApplet.class" archive="bin/TracPrinter.jar" width="400" height="200">
+		  <param name="properties" value="http://some_host_or_ip_address/folder/printer.properties"/>
+		</applet>
+	</body>
+</html> 
+```
 
