@@ -346,7 +346,7 @@ public class PrinterGui extends JFrame implements Printable {
         String line = "";
         
         int pos = 0;
-        int chars_per_line_description = Integer.parseInt(prop.getProperty("chars_per_line_description"));
+        int max_chars_description = Integer.parseInt(prop.getProperty("max_chars_description"));
         
         int line_height_description = Integer.parseInt(prop.getProperty("line_height_description"));
         int line_height_footer = Integer.parseInt(prop.getProperty("line_height_footer"));
@@ -364,7 +364,7 @@ public class PrinterGui extends JFrame implements Printable {
                 word = word.substring(0, word.length()-1);
             }
             if(line_counter < max_lines) {
-                if(pos + word.length() > chars_per_line_description) {
+                if(pos + word.length() > max_chars_description) {
                     graphics.drawString(line, padding_text_left, distance_description_top + line_counter * line_height_description);
                     line_counter++;
                     line = word + " ";
