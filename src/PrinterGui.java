@@ -17,7 +17,6 @@ import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -28,8 +27,10 @@ import java.net.Authenticator;
 import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -39,12 +40,6 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 import javax.print.DocFlavor;
-import javax.print.StreamPrintServiceFactory;
-import javax.print.DocFlavor.CHAR_ARRAY;
-import javax.print.attribute.HashPrintRequestAttributeSet;
-import javax.print.attribute.PrintRequestAttributeSet;
-import javax.print.attribute.standard.Copies;
-import javax.print.attribute.standard.MediaSize;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -61,13 +56,10 @@ public class PrinterGui extends JFrame implements Printable {
 	
     private Map<String, String> data;
 	
-    private String field_header;
-    private String field_description;
-    private String field_footer;
-	
 	private boolean loadingDone = false;
 	
-	private BufferedImage ticketCard;
+	private List<BufferedImage> images;
+	private List<Map<String, String>> toPrint;
 	
 	private int width;
 	private int height;
@@ -94,7 +86,8 @@ public class PrinterGui extends JFrame implements Printable {
 		
 		Container panel = getContentPane();
 		arrangeElements(panel);
-
+		init();
+		
 		this.setTitle("TracPrinter");
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
@@ -105,6 +98,12 @@ public class PrinterGui extends JFrame implements Printable {
 	public PrinterGui(Container panel, String propertiesUrl) {
 		loadPropertiesFromUrl(propertiesUrl);
 		arrangeElements(panel);
+		init();
+	}
+	
+	private void init() {
+	    toPrint = new ArrayList<Map<String,String>>();
+	    images = new ArrayList<BufferedImage>();
 	}
 	
 	private void arrangeElements(Container panel) {
@@ -112,8 +111,9 @@ public class PrinterGui extends JFrame implements Printable {
 		GridBagConstraints c = new GridBagConstraints();
 		panel.setLayout(lm);
 		
-		JLabel label = new JLabel("Enter Ticket ID");
+		JLabel label = new JLabel("Enter max. 2 Ticket IDs");
 		ticketField = new JTextField();
+		ticketField.setToolTipText("Enter max. 2 Ticket IDs. Eg. id1,id2");
 		submitButton = new JButton("Print Ticket");
 		
 		String[] projects = prop.getProperty("trac_project").split("\\,");
@@ -123,7 +123,7 @@ public class PrinterGui extends JFrame implements Printable {
 		ActionListener al = new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				getTicketContents();
+				startProcessing();
 			}
 		};
 		
@@ -136,7 +136,7 @@ public class PrinterGui extends JFrame implements Printable {
 			@Override
 			public void keyReleased(KeyEvent arg0) {
 				if(arg0.getKeyCode() == KeyEvent.VK_ENTER) {
-					getTicketContents();
+					startProcessing();
 				}
 			}
 			
@@ -196,6 +196,23 @@ public class PrinterGui extends JFrame implements Printable {
 		ticketField.transferFocus();		
 	}
 	
+	private void startProcessing() {
+	    String[] ids = ticketField.getText().split(",");
+	    for (String ticketId : ids) {
+	        getTicketContents(ticketId.trim());
+        }
+	    createTicketImage();
+        PrinterJob printJob = PrinterJob.getPrinterJob();
+        printJob.setPrintable(this);
+
+        if(printJob.printDialog()) {
+            try {
+                printJob.print();
+            } catch (PrinterException e) {
+                e.printStackTrace();
+            }
+        }	    
+	}
 	
 	/**
 	 * Load properties
@@ -233,7 +250,7 @@ public class PrinterGui extends JFrame implements Printable {
 	/**
 	 * Try to load ticket info by URL and start printing routine
 	 */
-	public void getTicketContents() {
+	public void getTicketContents(String ticketId) {
 		data = new HashMap<String, String>();
 		try {
 		    
@@ -241,7 +258,7 @@ public class PrinterGui extends JFrame implements Printable {
 		        Authenticator.setDefault(new TracAuthenticator());
 		    }
 		    
-			URL url = new URL(prop.getProperty("trac_url") + combo.getSelectedItem() + "/ticket/" + ticketField.getText() + "?format=tab");
+			URL url = new URL(prop.getProperty("trac_url") + combo.getSelectedItem() + "/ticket/" + ticketId + "?format=tab");
 			BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
 			String header = in.readLine();
 			String[] keys = header.split("\t");
@@ -261,85 +278,83 @@ public class PrinterGui extends JFrame implements Printable {
 				}
 			}
 			
-			field_header = prop.getProperty("field_header");
-			field_description = prop.getProperty("field_description");
-			field_footer = prop.getProperty("field_footer");
+			String field_header = prop.getProperty("field_header");
+			String field_description = prop.getProperty("field_description");
+			String field_footer = prop.getProperty("field_footer");
 			
 			for (String key : keys) {
-				field_header = field_header.replaceAll("\\{" + key + "\\}", data.get(key));
+			    field_header = field_header.replaceAll("\\{" + key + "\\}", data.get(key));
 				field_description = field_description.replaceAll("\\{" + key + "\\}", data.get(key));
 				field_footer = field_footer.replaceAll("\\{" + key + "\\}", data.get(key));
 			}
 			loadingDone = true;
+			
+			Map<String, String> d = new HashMap<String, String>();
+			d.put("field_header", field_header);
+			d.put("field_description", field_description);
+			d.put("field_footer", field_footer);
+			d.put("ticketId", ticketId);
+			toPrint.add(d);
+			
 		} catch (MalformedURLException e) {
-			//ticketField.setText(e.getMessage());
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-			//ticketField.setText(e.getMessage());
 		} catch  (Exception e) {
 		    e.printStackTrace();
-			//ticketField.setText(e.getMessage());
-		}
-		if(loadingDone) {
-			printTicket();			
 		}
 	}
 
 	/**
 	 * Show print dialog
 	 */
-	private void printTicket() {
-		PrinterJob printJob = PrinterJob.getPrinterJob();
-		printJob.setPrintable(this);
+	private void createTicketImage() {
 		String suffix = "jpg";
-		
-		DocFlavor flavor = DocFlavor.INPUT_STREAM.JPEG;
-		String psMimeType = DocFlavor.BYTE_ARRAY.POSTSCRIPT.getMimeType();
 		
 		//Store card as file
         width = Integer.parseInt(prop.getProperty("ticket_width"));
         height = Integer.parseInt(prop.getProperty("ticket_height"));		
 		boolean keepFile = Boolean.parseBoolean(prop.getProperty("keep_image_as_file"));
-        ticketCard = new BufferedImage(width + 100, height + 100, BufferedImage.TYPE_INT_RGB);
-		Graphics g = getGraphics(ticketCard.createGraphics());
 		
-		try {
-            Iterator<ImageWriter> writers = ImageIO.getImageWritersBySuffix("jpeg");
-            if (!writers.hasNext())
-                throw new IllegalStateException("No writers found");
+		for (Map<String, String> data : toPrint) {
+		    BufferedImage ticketCard = new BufferedImage(width + 100, height + 100, BufferedImage.TYPE_INT_RGB);
+            createGraphics(ticketCard.createGraphics(), data);
             
-            ImageWriter writer = (ImageWriter) writers.next();
-            File file = new File(ticketField.getText() + "." + suffix);
-            ImageOutputStream ios = ImageIO.createImageOutputStream(new FileOutputStream(file));
-            
-            writer.setOutput(ios);
-            
-            ImageWriteParam param = writer.getDefaultWriteParam();
-            
-            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-            param.setCompressionQuality(1.0f);
-            
-            writer.write(null, new IIOImage(ticketCard, null, null), param);
-            
-            if(!keepFile) {
-                file.delete();
-            }
-        } catch (IOException e1) {
-            e1.printStackTrace();
+            try {
+                Iterator<ImageWriter> writers = ImageIO.getImageWritersBySuffix("jpeg");
+                if (!writers.hasNext())
+                    throw new IllegalStateException("No writers found");
+                
+                ImageWriter writer = (ImageWriter) writers.next();
+                File file = new File(data.get("ticketId") + "." + suffix);
+                ImageOutputStream ios = ImageIO.createImageOutputStream(new FileOutputStream(file));
+                
+                writer.setOutput(ios);
+                
+                ImageWriteParam param = writer.getDefaultWriteParam();
+                
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                param.setCompressionQuality(1.0f);
+                
+                writer.write(null, new IIOImage(ticketCard, null, null), param);
+                
+                if(!keepFile) {
+                    file.delete();
+                }
+                images.add(ticketCard);
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }  
         }
-		
-		if(printJob.printDialog()) {
-			try {
-				printJob.print();
-			} catch (PrinterException e) {
-				e.printStackTrace();
-			}
-		}
+
 	}
 
-	public Graphics2D getGraphics(Graphics2D graphics) {
+	public void createGraphics(Graphics2D graphics, Map<String, String> data) {
 	    int offset = 10;
+	    
+	    String field_header = data.get("field_header");
+	    String field_description = data.get("field_description");
+	    String field_footer = data.get("field_footer");
 	    
 	    graphics.setColor(Color.WHITE);
 	    graphics.fillRect(0, 0, 10000,10000);
@@ -412,21 +427,29 @@ public class PrinterGui extends JFrame implements Printable {
         
         graphics.drawLine(offset, distance_line_top, width + offset, distance_line_top);
         graphics.drawLine(offset, distance_line_bottom, width + offset, distance_line_bottom);	    
-	    return null;
 	}
 	
 	@Override
-	public int print(Graphics graphics, PageFormat pageFormat, int pageIndex)
-			throws PrinterException {
-	    
-	    double scale = 0.45;
-	    int w = (int) (scale * ticketCard.getWidth());
-	    int h = (int) (scale * ticketCard.getHeight());	    
-	    
-		if(pageIndex == 0) {
-			Graphics2D g = (Graphics2D) graphics;
-			g.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-			graphics.drawImage(ticketCard, 0, 50, w, h, null);
+	public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
+	    if(pageIndex == 0) {
+	        Graphics2D g = (Graphics2D) graphics;
+	        g.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
+	        
+	        int ticketCounter = 0;
+	        int offset = 0;
+	        double scale = 0.45;
+	        
+    	    for (BufferedImage ticketCard : images) {
+    	        offset = (int)(ticketCounter * ticketCard.getHeight() * scale);
+    	        
+    	        int w = (int) (scale * ticketCard.getWidth());
+    	        int h = (int) (scale * ticketCard.getHeight()); 
+                
+                graphics.drawImage(ticketCard, 0, 50 + offset, w, h, null);   
+                ticketCounter++;
+                System.out.println(ticketCounter);
+            }
+
 			return PAGE_EXISTS;
 		} else {
 			return NO_SUCH_PAGE;
