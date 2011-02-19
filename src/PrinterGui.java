@@ -113,9 +113,9 @@ public class PrinterGui extends JFrame {
 		GridBagConstraints c = new GridBagConstraints();
 		panel.setLayout(lm);
 		
-		JLabel label = new JLabel("Enter max. 2 Ticket IDs");
+		JLabel label = new JLabel("Enter Ticket IDs");
 		ticketField = new JTextField();
-		ticketField.setToolTipText("Enter max. 2 Ticket IDs. Eg. id1,id2");
+		ticketField.setToolTipText("Enter Ticket IDs. Eg. id1,id2,id3,...");
 		submitButton = new JButton("Print Ticket");
 		
 		String[] projects = prop.getProperty("trac_project").split("\\,");
