@@ -92,6 +92,11 @@ public class PrinterGui extends JFrame {
 		setVisible(true);
 	}
 	
+	/**
+	 * Set up GUI for applet
+	 * @param panel
+	 * @param propertiesUrl
+	 */
 	public PrinterGui(Container panel, String propertiesUrl) {
 		loadPropertiesFromUrl(propertiesUrl);
 		arrangeElements(panel);
@@ -151,13 +156,13 @@ public class PrinterGui extends JFrame {
 		c.gridx = 0;
 		c.gridy = row;
 		c.gridwidth = 1;
-		c.weightx = 0.75;
+		c.weightx = 0.5;
 		panel.add(projectLabel, c);
 		
 		c.gridx = 1;
 		c.gridy = row;
 		c.gridwidth = 2;
-		c.weightx = 0.25;
+		c.weightx = 0.5;
 		panel.add(combo, c);
 		
 		row++;
@@ -172,14 +177,14 @@ public class PrinterGui extends JFrame {
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.gridx = 1;
 		c.gridy = row;
-		c.weightx = 0.75;
+		c.weightx = 0.5;
 		c.weighty = 1;
 		panel.add(ticketField, c);
 		
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.gridx = 2;
 		c.gridy = row;
-		c.weightx = 0.25;
+		c.weightx = 0.5;
 		panel.add(submitButton, c);
 
 		row++;
@@ -376,6 +381,11 @@ public class PrinterGui extends JFrame {
 
 	}
 
+	/**
+	 * Paint ticket card
+	 * @param graphics graphics object
+	 * @param data text elements
+	 */
 	public void createGraphics(Graphics2D graphics, Map<String, String> data) {
 	    int offset = 10;
 	    
@@ -400,6 +410,13 @@ public class PrinterGui extends JFrame {
         
         int distance_line_top = Integer.parseInt(prop.getProperty("distance_line_top")) + offset;
         int distance_line_bottom = Integer.parseInt(prop.getProperty("distance_line_bottom")) + offset;
+
+    	int max_chars_description = Integer.parseInt(prop.getProperty("max_chars_description"));
+        
+        int line_height_description = Integer.parseInt(prop.getProperty("line_height_description"));
+        int line_height_footer = Integer.parseInt(prop.getProperty("line_height_footer"));
+        
+        int max_lines = Integer.parseInt(prop.getProperty("max_lines"));
         
         graphics.drawRect(offset, offset, width, height);
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_header));
@@ -415,12 +432,6 @@ public class PrinterGui extends JFrame {
         String line = "";
         
         int pos = 0;
-        int max_chars_description = Integer.parseInt(prop.getProperty("max_chars_description"));
-        
-        int line_height_description = Integer.parseInt(prop.getProperty("line_height_description"));
-        int line_height_footer = Integer.parseInt(prop.getProperty("line_height_footer"));
-        
-        int max_lines = Integer.parseInt(prop.getProperty("max_lines"));
         
         int line_counter = 0;
         
@@ -450,7 +461,7 @@ public class PrinterGui extends JFrame {
         line_counter = 0;
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_footer));
         graphics.drawString(field_footer, padding_text_left, distance_footer_top);
-        graphics.drawString(prop.getProperty("trac_url") + combo.getSelectedItem() + "/ticket/" + ticketField.getText(), padding_text_left, distance_footer_top + line_height_footer);
+        graphics.drawString(prop.getProperty("trac_url") + combo.getSelectedItem() + "/ticket/" + data.get("ticketId"), padding_text_left, distance_footer_top + line_height_footer);
         
         graphics.drawLine(offset, distance_line_top, width + offset, distance_line_top);
         graphics.drawLine(offset, distance_line_bottom, width + offset, distance_line_bottom);	    
