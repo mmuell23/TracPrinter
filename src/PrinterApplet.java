@@ -4,6 +4,8 @@ import javax.swing.JApplet;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import de.tracprinter.PrinterGui;
+
 public class PrinterApplet extends JApplet {
 	public void init() {
 		try {

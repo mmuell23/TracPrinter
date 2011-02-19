@@ -1,5 +1,7 @@
+package de.tracprinter;
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -10,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.awt.print.Book;
 import java.awt.print.PageFormat;
@@ -25,6 +29,7 @@ import java.io.InputStreamReader;
 import java.net.Authenticator;
 import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +50,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
+
 
 public class PrinterGui extends JFrame {
     private JTextField ticketField; 
@@ -193,7 +199,41 @@ public class PrinterGui extends JFrame {
 		c.gridx = 0;
 		c.gridy = row;
 		c.gridwidth = 3;
-		panel.add(new JLabel("TracPrinter: www.any-where.de"), c);
+		JLabel urlLabel = new JLabel("TracPrinter: www.any-where.de");
+		urlLabel.addMouseListener(new MouseListener() {
+			
+			@Override
+			public void mouseReleased(MouseEvent arg0) {
+				System.out.println("Mouse released.");
+				Desktop d = null;
+				if(Desktop.isDesktopSupported()) {
+					d = Desktop.getDesktop();
+					try {
+						URI uri = new URI("http://www.any-where.de");
+						d.browse(uri);	
+					} catch(Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			
+			@Override
+			public void mousePressed(MouseEvent arg0) {
+			}
+			
+			@Override
+			public void mouseExited(MouseEvent arg0) {
+			}
+			
+			@Override
+			public void mouseEntered(MouseEvent arg0) {
+			}
+			
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+			}
+		});
+		panel.add(urlLabel, c);
 
 		ticketField.transferFocus();		
 	}

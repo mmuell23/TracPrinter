@@ -1,3 +1,4 @@
+package de.tracprinter;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -27,7 +28,6 @@ public class TicketCard implements Printable {
 	@Override
 	public int print(Graphics graphics, PageFormat pageFormat, int pageIndex)
 			throws PrinterException {
-    	System.out.println("Drucke " + pageIndex);
     	
     	//no image? stop here
     	if(images.size() == 0) {
