@@ -13,7 +13,7 @@ public class PrinterApplet extends JApplet {
 				@Override
 				public void run() {
 					JPanel p = new JPanel();
-					PrinterGui gui = new PrinterGui(p, getParameter("properties"));
+					PrinterGui gui = new PrinterGui(p);
 					getContentPane().add(p);
 				}
 			});

@@ -67,8 +67,8 @@ public class PrinterGui extends JFrame {
 	private int width;
 	private int height;
 	
-	private static String user;
-	private static String pass;
+	private static String user = null;
+	private static String pass = null;
 	
     static class TracAuthenticator extends Authenticator {
         public PasswordAuthentication getPasswordAuthentication() {
@@ -80,7 +80,7 @@ public class PrinterGui extends JFrame {
 	 * Set up Swing GUI
 	 */
 	public PrinterGui() {
-		loadProperties();
+		loadPropertiesFromFile();
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e) {
@@ -103,8 +103,8 @@ public class PrinterGui extends JFrame {
 	 * @param panel
 	 * @param propertiesUrl
 	 */
-	public PrinterGui(Container panel, String propertiesUrl) {
-		loadPropertiesFromUrl(propertiesUrl);
+	public PrinterGui(Container panel) {
+		loadProperties();
 		arrangeElements(panel);
 		init();
 	}
@@ -286,18 +286,30 @@ public class PrinterGui extends JFrame {
             }
         }	    
 	}
-	
+
 	/**
 	 * Load properties
 	 */
 	private void loadProperties() {
 		try {
-			prop.load(new FileInputStream(new File("printer.properties")));
+			prop.load(getClass().getResourceAsStream("/printer.properties"));
 			setUserAndPass();
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
 		} catch (IOException e1) {
 			e1.printStackTrace();
+		}
+	}
+	
+	private void loadPropertiesFromFile() {
+		try {
+			prop.load(new FileInputStream(new File("printer.properties")));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
@@ -327,7 +339,7 @@ public class PrinterGui extends JFrame {
 		data = new HashMap<String, String>();
 		try {
 		    
-		    if(!user.equals("") && !pass.equals("")) {
+		    if(user != null && pass != null) {
 		        Authenticator.setDefault(new TracAuthenticator());
 		    }
 		    
