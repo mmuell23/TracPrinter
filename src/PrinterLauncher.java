@@ -11,6 +11,6 @@ public class PrinterLauncher {
 	 */
 	public static void main(String[] args) {
 		JFrame frame = new PrinterGui();
-		frame.setSize(600, 120);
+		frame.setSize(600, 200);
 	}
 }

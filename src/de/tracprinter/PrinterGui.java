@@ -54,7 +54,9 @@ import javax.swing.UIManager;
 
 public class PrinterGui extends JFrame {
     private JTextField ticketField; 
-    private JButton submitButton;
+    private JButton ticketSubmitButton;
+    private JTextField reportField; 
+    private JButton reportSubmitButton;
     private JComboBox combo;
 	
     private Properties prop = new Properties(); //container for properties
@@ -63,6 +65,7 @@ public class PrinterGui extends JFrame {
 	
 	private Stack<BufferedImage> images;
 	private List<Map<String, String>> toPrint;
+	private String ticketsToPrint; 
 	
 	private int width;
 	private int height;
@@ -119,23 +122,26 @@ public class PrinterGui extends JFrame {
 		GridBagConstraints c = new GridBagConstraints();
 		panel.setLayout(lm);
 		
-		JLabel label = new JLabel("Enter Ticket IDs");
-		ticketField = new JTextField();
-		ticketField.setToolTipText("Enter Ticket IDs. Eg. id1,id2,id3,...");
-		submitButton = new JButton("Print Ticket");
-		
 		String[] projects = prop.getProperty("trac_project").split("\\,");
 		combo = new JComboBox(projects);
 		JLabel projectLabel = new JLabel("Select Project");
 		
-		ActionListener al = new ActionListener() {
+		ActionListener alTicket = new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				ticketsToPrint = ticketField.getText();
 				startProcessing();
 			}
 		};
+
+		ActionListener alReport = new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				readTicketsByReport();
+			}
+		};
 		
-		KeyListener kl = new KeyListener() {
+		KeyListener klTicket = new KeyListener() {
 			
 			@Override
 			public void keyTyped(KeyEvent arg0) {
@@ -144,6 +150,7 @@ public class PrinterGui extends JFrame {
 			@Override
 			public void keyReleased(KeyEvent arg0) {
 				if(arg0.getKeyCode() == KeyEvent.VK_ENTER) {
+					ticketsToPrint = ticketField.getText();
 					startProcessing();
 				}
 			}
@@ -152,10 +159,44 @@ public class PrinterGui extends JFrame {
 			public void keyPressed(KeyEvent arg0) {
 			}
 		};
+
+		KeyListener klReport = new KeyListener() {
+			
+			@Override
+			public void keyTyped(KeyEvent arg0) {
+			}
+			
+			@Override
+			public void keyReleased(KeyEvent arg0) {
+				if(arg0.getKeyCode() == KeyEvent.VK_ENTER) {
+					readTicketsByReport();
+				}
+			}
+			
+			@Override
+			public void keyPressed(KeyEvent arg0) {
+			}
+		};
 		
-		submitButton.addActionListener(al);
-		ticketField.addKeyListener(kl);
+		JLabel label = new JLabel("Enter Ticket IDs");
+		ticketField = new JTextField();
+		ticketSubmitButton = new JButton("Print Tickets");
+		
+		ticketField.setToolTipText("Enter Ticket IDs. Eg. 1,1-4,5");
+		ticketField.addKeyListener(klTicket);
 		ticketField.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+
+		ticketSubmitButton.addActionListener(alTicket);
+
+		JLabel reportLabel = new JLabel("Enter Report ID");
+		reportField = new JTextField();
+		reportSubmitButton = new JButton("Print Tickets");
+		
+		reportField.setToolTipText("Enter Rport ID.");
+		reportField.addKeyListener(klReport);
+		reportField.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+		
+		reportSubmitButton.addActionListener(alReport);
 		
 		int row = 0;
 		c.fill = GridBagConstraints.HORIZONTAL;
@@ -191,8 +232,30 @@ public class PrinterGui extends JFrame {
 		c.gridx = 2;
 		c.gridy = row;
 		c.weightx = 0.5;
-		panel.add(submitButton, c);
+		panel.add(ticketSubmitButton, c);
 
+		row++;
+		
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.gridwidth = 1;
+		c.gridx = 0;
+		c.gridy = row;
+		c.weighty = 1;
+		panel.add(reportLabel, c);
+		
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.gridx = 1;
+		c.gridy = row;
+		c.weightx = 0.5;
+		c.weighty = 1;
+		panel.add(reportField, c);
+		
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.gridx = 2;
+		c.gridy = row;
+		c.weightx = 0.5;
+		panel.add(reportSubmitButton, c);
+		
 		row++;
 		
 		c.fill = GridBagConstraints.HORIZONTAL;
@@ -204,7 +267,6 @@ public class PrinterGui extends JFrame {
 			
 			@Override
 			public void mouseReleased(MouseEvent arg0) {
-				System.out.println("Mouse released.");
 				Desktop d = null;
 				if(Desktop.isDesktopSupported()) {
 					d = Desktop.getDesktop();
@@ -238,10 +300,44 @@ public class PrinterGui extends JFrame {
 		ticketField.transferFocus();		
 	}
 	
+	private void readTicketsByReport() {
+	    if(user != null && pass != null) {
+	        Authenticator.setDefault(new TracAuthenticator());
+	    }
+	    try {
+	    	URL url = new URL(prop.getProperty("trac_url") + combo.getSelectedItem() + "/report/" + reportField.getText() + "?format=tab");
+			BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+			in.readLine(); //read first line to ignore header
+			String line = in.readLine();
+			ticketsToPrint = "";
+			
+			while(line != null) {
+				String[] values = line.split("\t");
+				ticketsToPrint += values[1] + ",";
+				line = in.readLine();
+			}	
+			startProcessing();
+	    } catch (Exception e) {
+	    	e.printStackTrace();
+		}
+	}
+	
 	private void startProcessing() {
-	    String[] ids = ticketField.getText().split(",");
+	    String[] ids = ticketsToPrint.split(",");
 	    for (String ticketId : ids) {
-	        getTicketContents(ticketId.trim());
+	    	String[] range = ticketId.split("\\-");
+	    	if(range.length > 1) {
+	    		int start = Integer.parseInt(range[0].trim());
+	    		int end = Integer.parseInt(range[1].trim());
+	    		for(int i=start;i <= end; i++) {
+	    			getTicketContents(i +"");		
+	    		}
+	    	} else {
+	    		if(!range[0].trim().equals("")) {
+	    			getTicketContents(range[0].trim());	
+	    		}
+	    	}
+	        
         }
 	    createTicketImage();
 	    
@@ -284,7 +380,8 @@ public class PrinterGui extends JFrame {
             } catch (PrinterException e) {
                 e.printStackTrace();
             }
-        }	    
+        }
+        init();
 	}
 
 	/**
@@ -305,10 +402,8 @@ public class PrinterGui extends JFrame {
 		try {
 			prop.load(new FileInputStream(new File("printer.properties")));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
