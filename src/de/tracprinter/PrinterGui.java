@@ -51,6 +51,8 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 
+import com.Ostermiller.util.CSVParser;
+
 
 public class PrinterGui extends JFrame {
     private JTextField ticketField; 
@@ -305,17 +307,16 @@ public class PrinterGui extends JFrame {
 	        Authenticator.setDefault(new TracAuthenticator());
 	    }
 	    try {
-	    	URL url = new URL(prop.getProperty("trac_url") + combo.getSelectedItem() + "/report/" + reportField.getText() + "?format=tab");
+	    	URL url = new URL(prop.getProperty("trac_url") + combo.getSelectedItem() + "/report/" + reportField.getText() + "?format=csv");
 			BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
 			in.readLine(); //read first line to ignore header
-			String line = in.readLine();
 			ticketsToPrint = "";
 			
-			while(line != null) {
-				String[] values = line.split("\t");
-				ticketsToPrint += values[1] + ",";
-				line = in.readLine();
-			}	
+			//read csv file
+			String[][] csv = CSVParser.parse(in);
+			for (int i=0; i<csv.length; i++){
+			    ticketsToPrint += csv[i][1] + ",";
+			}			
 			startProcessing();
 	    } catch (Exception e) {
 	    	e.printStackTrace();
