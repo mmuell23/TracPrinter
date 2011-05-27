@@ -53,7 +53,6 @@ import javax.swing.UIManager;
 
 import com.Ostermiller.util.CSVParser;
 
-
 public class PrinterGui extends JFrame {
     private JTextField ticketField; 
     private JButton ticketSubmitButton;
@@ -315,6 +314,7 @@ public class PrinterGui extends JFrame {
 			//read csv file
 			String[][] csv = CSVParser.parse(in);
 			for (int i=0; i<csv.length; i++){
+			    System.out.println(csv[i][1]);
 			    ticketsToPrint += csv[i][1] + ",";
 			}			
 			startProcessing();
@@ -474,6 +474,7 @@ public class PrinterGui extends JFrame {
 			d.put("field_description", field_description);
 			d.put("field_footer", field_footer);
 			d.put("ticketId", ticketId);
+			d.put("projectName", combo.getSelectedItem().toString());
 			toPrint.add(d);
 			
 		} catch (MalformedURLException e) {
@@ -566,6 +567,12 @@ public class PrinterGui extends JFrame {
         
         int max_lines = Integer.parseInt(prop.getProperty("max_lines"));
         
+        int ticket_width = Integer.parseInt(prop.getProperty("ticket_width"));
+        int ticket_height = Integer.parseInt(prop.getProperty("ticket_height"));
+        
+        String trac_url = prop.getProperty("trac_url");
+        String ticket_closer_url = prop.getProperty("ticket_closer_url");
+        
         graphics.drawRect(offset, offset, width, height);
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_header));
         if(field_header.length() > max_chars_headline) {
@@ -606,6 +613,8 @@ public class PrinterGui extends JFrame {
         
         graphics.drawString(line, padding_text_left, distance_description_top + line_counter * line_height_description);
         
+        graphics.drawImage(QRCodeGenerator.getCodeForURL("https://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=" + ticket_closer_url + "?project=" + data.get("projectName") + "%26ticket=" + data.get("ticketId")),ticket_width-160,ticket_height-250,null);
+        
         line_counter = 0;
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, font_size_footer));
         graphics.drawString(field_footer, padding_text_left, distance_footer_top);
@@ -614,4 +623,6 @@ public class PrinterGui extends JFrame {
         graphics.drawLine(offset, distance_line_top, width + offset, distance_line_top);
         graphics.drawLine(offset, distance_line_bottom, width + offset, distance_line_bottom);	    
 	}	
+	
+	
 }
